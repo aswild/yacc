@@ -1,0 +1,8 @@
+*.pyc
+*~
+*.swp
+test.py
+vaperecipe*
+*.autosave
+*.cpp
+*.h
