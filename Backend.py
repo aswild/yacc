@@ -72,11 +72,12 @@ class Backend(object):
 
 		return ret
 
-	def calculate_mix(self, recipe_name, volume=10, nic=3, vg=70, mix='juice_from_ingredients'):
+	def calculate_mix(self, recipe_name, totalvol=10, nic=3, vg=70, mix='juice_from_ingredients'):
 		""" Calculate the mix for the given recipe and parameters
 		TODO: check for max PG/VG and correct appropriately
 		"""
 		try:
+			#pdb.set_trace()
 			recipe = self._recipes[recipe_name]
 		except KeyError:
 			print("Error: recipe %s not found!"%recipe_name)
@@ -86,10 +87,10 @@ class Backend(object):
 			vg = vg / 100.0
 		
 		# assumes all flavors are PG, will fix this later
-		totalflav = sum([1.0*volume*recipe[f] for f in recipe.keys()])
-		totalvg = volume * vg
-		totalpg = volume - totalvg
-		nic = 1.0*nic*volume / self._nic_strength
+		totalflav = sum([1.0*totalvol*recipe[f] for f in recipe.keys()])
+		totalvg = totalvol * vg
+		totalpg = totalvol - totalvg
+		nic = 1.0*nic*totalvol / self._nic_strength
 
 		if self._nic_base == 'vg':
 			addpg = totalpg - totalflav
@@ -104,7 +105,7 @@ class Backend(object):
 		ret['nic'] = nic
 		ret['flavors'] = {}
 		for (f, amount) in recipe.items():
-			ret['flavors'][f] = 1.0*volume*amount
+			ret['flavors'][f] = 1.0*totalvol*amount
 
 		return ret
 
