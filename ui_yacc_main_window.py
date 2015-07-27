@@ -25,7 +25,7 @@ except AttributeError:
 class Ui_yacc_main_window(object):
     def setupUi(self, yacc_main_window):
         yacc_main_window.setObjectName(_fromUtf8("yacc_main_window"))
-        yacc_main_window.resize(821, 273)
+        yacc_main_window.resize(821, 300)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

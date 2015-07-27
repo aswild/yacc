@@ -83,14 +83,28 @@ class Backend(object):
 			print("Error: recipe %s not found!"%recipe_name)
 			return None
 
+		ret = {}
 		if vg > 1:
 			vg = vg / 100.0
+
 		
 		# assumes all flavors are PG, will fix this later
 		totalflav = sum([1.0*totalvol*recipe[f] for f in recipe.keys()])
+		nic = 1.0*nic*totalvol / self._nic_strength
+
+		# make sure we're within Max VG/Min VG range
+		max_vg = 1.0 - self.get_total_flavor(recipe_name) - (nic if self._nic_base=='pg' else 0)
+		if vg > max_vg:
+			vg = max_vg
+			ret['message'] = 'Using Max VG: %.1f%%'%(max_vg*100.0)
+		else:
+			min_vg = nic / totalvol if self._nic_base=='vg' else 0.0
+			if vg < min_vg:
+				vg = min_vg
+				ret['message'] = 'Using Max PG: %.1f%%'%(100.0*(1.0-min_vg))
+
 		totalvg = totalvol * vg
 		totalpg = totalvol - totalvg
-		nic = 1.0*nic*totalvol / self._nic_strength
 
 		if self._nic_base == 'vg':
 			addpg = totalpg - totalflav
@@ -99,7 +113,12 @@ class Backend(object):
 			addpg = totalpg - totalflav - nic
 			addvg = totalvg
 
-		ret = {}
+		# force positive numbers in case rounding makes -.0000000001 or whatever
+		if addpg < 0:
+			addpg = 0
+		if addvg < 0:
+			addvg = 0
+
 		ret['pg'] = addpg
 		ret['vg'] = addvg
 		ret['nic'] = nic
@@ -113,3 +132,17 @@ class Backend(object):
 		recs = list(self._recipes.keys())
 		recs.sort()
 		return recs
+
+	def get_config(self):
+		return {'n_recipes': len(self._recipes.keys()),
+				'nic_strength': self._nic_strength,
+				'nic_base': self._nic_base}
+
+	def get_total_flavor(self, recipe_name):
+		try:
+			recipe = self._recipes[recipe_name]
+		except KeyError:
+			print("Error: recipe %s not found!"%recipe_name)
+			return None
+		return sum(recipe.values())
+

@@ -28,18 +28,25 @@ class YaccMain(QtGui.QMainWindow):
 		for recipe in self.be.get_recipes():
 			self.ui.recipe_box.addItem(recipe)
 
-		# set up signals/slots
+		# status bar
+		self.status_config_message_label = QtGui.QLabel()
+		self.ui.status_bar.addPermanentWidget(self.status_config_message_label)
+		self.update_config_status()
+		self.update_recipe_status()
+
+		# signals/slots
 		self.ui.actionExit.triggered.connect(self.exit)
-		self.ui.update_button.clicked.connect(self.update)
-		self.ui.recipe_box.currentIndexChanged.connect(self.update)
-		self.ui.mix_box.currentIndexChanged.connect(self.update)
-		self.ui.totalvol_box.textChanged.connect(self.update)
-		self.ui.nic_box.textChanged.connect(self.update)
-		self.ui.vg_box.textChanged.connect(self.update)
+		self.ui.update_button.clicked.connect(self.update_mix)
+		self.ui.recipe_box.currentIndexChanged.connect(self.update_mix)
+		self.ui.recipe_box.currentIndexChanged.connect(self.update_recipe_status)
+		self.ui.mix_box.currentIndexChanged.connect(self.update_mix)
+		self.ui.totalvol_box.textChanged.connect(self.update_mix)
+		self.ui.nic_box.textChanged.connect(self.update_mix)
+		self.ui.vg_box.textChanged.connect(self.update_mix)
 
-		self.update()
+		self.update_mix()
 
-	def update(self):
+	def update_mix(self):
 		mix_inputs = self.check_inputs()
 		if mix_inputs is None:
 			return
@@ -61,6 +68,24 @@ class YaccMain(QtGui.QMainWindow):
 		self.ui.output_box.appendPlainText(' '*(max_flavor_length-8) + 'Nicotine: %3.2f mL'%mix['nic'])
 		self.ui.output_box.appendPlainText(' '*(max_flavor_length-2) + 'VG: %3.2f mL'%mix['vg'])
 		self.ui.output_box.appendPlainText(' '*(max_flavor_length-2) + 'PG: %3.2f mL'%mix['pg'])
+		if 'message' in mix:
+			self.ui.output_box.appendPlainText('')
+			self.ui.output_box.appendPlainText(mix['message'])
+
+	def update_config_status(self):
+		cfg = self.be.get_config()
+		self.status_config_message_label.setText('Nicotine: %d mg/mL %s; Recipes Loaded: %d'%(
+												cfg['nic_strength'], cfg['nic_base'].upper(), cfg['n_recipes']))
+
+	def update_recipe_status(self):
+		current_recipe = str(self.ui.recipe_box.currentText())
+		total_flav = self.be.get_total_flavor(current_recipe)
+		if total_flav is None:
+			self.ui.status_bar.showMessage('Recipe %s not found!'%current_recipe)
+		else:
+			total_flav = total_flav * 100.0
+			self.ui.status_bar.showMessage('Recipe: %s; Total Flavor: %.1f%%; Max VG: %.1f%%'%(
+											current_recipe, total_flav, 100.0-total_flav))
 
 	def check_inputs(self):
 		""" Read the mix parameters from the UI elements and convert numbers to type float.
