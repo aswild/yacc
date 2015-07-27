@@ -151,7 +151,6 @@ class Ui_yacc_main_window(object):
         self.label_4.setText(_translate("yacc_main_window", "Total Volume [mL]", None))
         self.label_3.setText(_translate("yacc_main_window", "Nicotine [mg/mL]", None))
         self.label_2.setText(_translate("yacc_main_window", "VG [%]", None))
-        self.vg_box.setText(_translate("yacc_main_window", "70", None))
         self.update_button.setText(_translate("yacc_main_window", "Update", None))
         self.menuFile.setTitle(_translate("yacc_main_window", "File", None))
         self.actionOpen_File.setText(_translate("yacc_main_window", "Open File", None))
