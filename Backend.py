@@ -113,7 +113,7 @@ class Backend(object):
 			addpg = totalpg - totalflav - nic
 			addvg = totalvg
 
-		# force positive numbers in case rounding makes -.0000000001 or whatever
+		# force nonnegative numbers in case rounding makes -.0000000001 or whatever
 		if addpg < 0:
 			addpg = 0
 		if addvg < 0:
