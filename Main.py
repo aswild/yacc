@@ -62,21 +62,9 @@ class YaccMain(QtGui.QMainWindow):
             # calculate_mix returns None if the recipe can't be found, so just bail
             # This shouldn't really happen since recipe_box is only populated by items that
             # backend.get_recipes returns
-            return
+            mix = 'Backend Error!'
 
-        max_flavor_length = max([len(f) for f in (list(mix['flavors'].keys()) + ['Nicotine'])])
-
-        self.ui.output_box.setPlainText('')
-        for f in sorted(mix['flavors'].keys()):
-            spaces = max_flavor_length - len(f)
-            self.ui.output_box.appendPlainText('%s: %3.2f mL'%(' '*spaces + f, mix['flavors'][f]))
-        self.ui.output_box.appendPlainText('') # blank line
-        self.ui.output_box.appendPlainText(' '*(max_flavor_length-8) + 'Nicotine: %3.2f mL'%mix['nic'])
-        self.ui.output_box.appendPlainText(' '*(max_flavor_length-2) + 'VG: %3.2f mL'%mix['vg'])
-        self.ui.output_box.appendPlainText(' '*(max_flavor_length-2) + 'PG: %3.2f mL'%mix['pg'])
-        if 'message' in mix:
-            self.ui.output_box.appendPlainText('')
-            self.ui.output_box.appendPlainText(mix['message'])
+        self.ui.output_box.setPlainText(mix)
 
     def update_config_status(self):
         cfg = self.be.get_config()

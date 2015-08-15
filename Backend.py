@@ -87,6 +87,7 @@ class Backend(object):
         if vg > 1:
             vg = vg / 100.0
 
+        message = None
         
         # assumes all flavors are PG, will fix this later
         totalflav = sum([1.0*totalvol*recipe[f] for f in recipe.keys()])
@@ -96,12 +97,12 @@ class Backend(object):
         max_vg = 1.0 - self.get_total_flavor(recipe_name) - (nic if self._nic_base=='pg' else 0)
         if vg > max_vg:
             vg = max_vg
-            ret['message'] = 'Using Max VG: %.1f%%'%(max_vg*100.0)
+            message = 'Using Max VG: %.1f%%'%(max_vg*100.0)
         else:
             min_vg = nic / totalvol if self._nic_base=='vg' else 0.0
             if vg < min_vg:
                 vg = min_vg
-                ret['message'] = 'Using Max PG: %.1f%%'%(100.0*(1.0-min_vg))
+                message = 'Using Max PG: %.1f%%'%(100.0*(1.0-min_vg))
 
         totalvg = totalvol * vg
         totalpg = totalvol - totalvg
@@ -119,12 +120,25 @@ class Backend(object):
         if addvg < 0:
             addvg = 0
 
-        ret['pg'] = addpg
-        ret['vg'] = addvg
-        ret['nic'] = nic
-        ret['flavors'] = {}
-        for (f, amount) in recipe.items():
-            ret['flavors'][f] = 1.0*totalvol*amount
+
+        # generate string to return for the output box
+        max_flavor_name_len = max(len(f) for f in (list(recipe.keys()) + ['Nicotine']))
+        ret = ''
+        for f in sorted(recipe.keys()):
+            f_vol = 1.0*totalvol*recipe[f]
+            spaces = max_flavor_name_len - len(f)
+            ret += '\n%s: %3.2f mL'%(' '*spaces + f, f_vol)
+
+        # the first character will always be a newline from the loop above, which we don't want, so kill it
+        ret = ret[1:]
+        
+        # add nic/VG/PG
+        ret += '\n\n' + ' '*(max_flavor_name_len-8) + 'Nicotine: %3.2f mL'%nic
+        ret += '\n'   + ' '*(max_flavor_name_len-2) + 'VG: %3.2f mL'%addvg
+        ret += '\n'   + ' '*(max_flavor_name_len-2) + 'PG: %3.2f mL'%addpg
+
+        if message is not None:
+            ret += '\n\n' + message
 
         return ret
 
