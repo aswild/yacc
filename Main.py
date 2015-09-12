@@ -21,7 +21,7 @@ class YaccMain(QtGui.QMainWindow):
 
         # Fill in UI defaults
         self.ui.totalvol_box.setText('10')
-        self.ui.nic_box.setText('2')
+        self.ui.nic_box.setText('3')
         self.ui.vg_box.setText('70')
 
         # add combo box options
