@@ -142,6 +142,14 @@ class Backend(object):
 
         return ret
 
+    def get_total_flavor(self, recipe_name):
+        try:
+            recipe = self._recipes[recipe_name]
+        except KeyError:
+            print("Error: recipe %s not found!"%recipe_name)
+            return None
+        return sum(recipe.values())
+
     def get_recipes(self):
         recs = list(self._recipes.keys())
         recs.sort()
@@ -152,11 +160,7 @@ class Backend(object):
                 'nic_strength': self._nic_strength,
                 'nic_base': self._nic_base}
 
-    def get_total_flavor(self, recipe_name):
-        try:
-            recipe = self._recipes[recipe_name]
-        except KeyError:
-            print("Error: recipe %s not found!"%recipe_name)
-            return None
-        return sum(recipe.values())
-
+    def update_recipe(self, recipe_name, recipe_data):
+        added = recipe_name not in self._recipes
+        self._recipes[recipe_name] = recipe_data
+        return added

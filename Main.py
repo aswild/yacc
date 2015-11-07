@@ -4,7 +4,7 @@ import sys
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import pyqtSignal, pyqtSlot
 from ui_yacc_main_window import Ui_yacc_main_window
-from RecipeBuilder import RecipeBuilder
+from RecipeEditor import RecipeEditor
 from Backend import Backend
 import pdb
 
@@ -36,7 +36,7 @@ class YaccMain(QtGui.QMainWindow):
         self.ui.status_bar.addPermanentWidget(self.status_config_message_label)
 
         # recipe editor
-        self.recipe_builder = None
+        self.recipe_editor = None
 
         # signals/slots
         self.ui.actionExit.triggered.connect(self.exit)
@@ -149,20 +149,20 @@ class YaccMain(QtGui.QMainWindow):
         return None if err else (recipe, totalvol, nic, vg, mix)
 
     def handle_add_recipes(self):
-        if self.recipe_builder is None:
-            self.recipe_builder = RecipeBuilder(self, self.be)
-            self.recipe_builder.signal_button_clicked.connect(self.handle_rbuilder_click)
-            self.recipe_builder.signal_exit.connect(self.handle_rbuilder_exit)
-            self.recipe_builder.show()
+        if self.recipe_editor is None:
+            self.recipe_editor = RecipeEditor(self, self.be)
+            self.recipe_editor.signal_button_clicked.connect(self.handle_redit_click)
+            self.recipe_editor.signal_exit.connect(self.handle_redit_exit)
+            self.recipe_editor.show()
 
     @pyqtSlot(str)
-    def handle_rbuilder_click(self, text):
+    def handle_redit_click(self, text):
         self.ui.output_box.setPlainText(text)
 
     @pyqtSlot(str)
-    def handle_rbuilder_exit(self, text):
+    def handle_redit_exit(self, text):
         self.ui.output_box.setPlainText('RBUILD EXIT:' + text)
-        self.recipe_builder = None
+        self.recipe_editor = None
 
     def exit(self):
         QtCore.QCoreApplication.instance().quit()
