@@ -40,7 +40,6 @@ class YaccMain(QtGui.QMainWindow):
 
         # signals/slots
         self.ui.actionExit.triggered.connect(self.exit)
-        self.ui.actionAdd_Recipes.triggered.connect(self.handle_add_recipes)
         self.ui.update_button.clicked.connect(self.update_mix)
         self.ui.recipe_box.currentIndexChanged.connect(self.update_mix)
         self.ui.recipe_box.currentIndexChanged.connect(self.update_recipe_status)
@@ -49,6 +48,8 @@ class YaccMain(QtGui.QMainWindow):
         self.ui.nic_box.textChanged.connect(self.update_mix)
         self.ui.vg_box.textChanged.connect(self.update_mix)
         self.ui.reload_button.clicked.connect(self.load_config)
+        self.ui.redit_button.clicked.connect(self.launch_redit)
+        self.ui.actionAdd_Recipes.triggered.connect(self.launch_redit)
 
         self.is_init = True
         self.update_mix()
@@ -148,16 +149,13 @@ class YaccMain(QtGui.QMainWindow):
 
         return None if err else (recipe, totalvol, nic, vg, mix)
 
-    def handle_add_recipes(self):
+    def launch_redit(self):
         if self.recipe_editor is None:
             self.recipe_editor = RecipeEditor(self, self.be)
-            self.recipe_editor.signal_button_clicked.connect(self.handle_redit_click)
             self.recipe_editor.signal_exit.connect(self.handle_redit_exit)
+            self.recipe_editor.signal_backend_updated.connect(self.update_mix)
+            self.recipe_editor.signal_backend_updated.connect(self.update_recipe_status)
             self.recipe_editor.show()
-
-    @pyqtSlot(str)
-    def handle_redit_click(self, text):
-        self.ui.output_box.setPlainText(text)
 
     @pyqtSlot(str)
     def handle_redit_exit(self, text):

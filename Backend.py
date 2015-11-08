@@ -1,11 +1,12 @@
 # Calculator backend which loads json configs/recipes, and calculates mixes
 
-import json
+import json, pprint
 import pdb
 
 class Backend(object):
 
     def __init__(self, arg=None):
+        self.filename = None
         if arg is None:
             self._default_config()
         elif type(arg) == dict:
@@ -16,6 +17,7 @@ class Backend(object):
                 with open(arg) as fp:
                     js = json.load(fp)
                     self._import_config_dict(js)
+                    self.filename = arg
             except:
                 print("Error: Unable to load %s! Using default config"%arg)
                 self._default_config()
@@ -150,6 +152,12 @@ class Backend(object):
             return None
         return sum(recipe.values())
 
+    def get_recipe(self, recipe):
+        try:
+            return self._recipes[recipe]
+        except KeyError:
+            return None
+    
     def get_recipes(self):
         recs = list(self._recipes.keys())
         recs.sort()
@@ -161,6 +169,28 @@ class Backend(object):
                 'nic_base': self._nic_base}
 
     def update_recipe(self, recipe_name, recipe_data):
-        added = recipe_name not in self._recipes
         self._recipes[recipe_name] = recipe_data
-        return added
+
+    def update_recipes(self, recipes):
+        print('Backend.update_recipes')
+        for r in recipes:
+            self._recipes[r] = recipes[r]
+
+    def write_file(self, filename=None):
+        print('Backend.write_file')
+        if filename is None:
+            filename = self.filename
+            if filename is None:
+                print('Backend.write_file: no filename given!')
+                return
+
+        # convert floats to percents
+        rout = {}
+        for r in self._recipes:
+            rout[r] = {}
+            for f in self._recipes[r]:
+                rout[r][f] = self._recipes[r][f] * 100.0
+
+        js = json.dumps(rout, sort_keys=True, indent=4, separators=(',', ': '))
+        with open(filename, 'w') as fp:
+            fp.write(js)
