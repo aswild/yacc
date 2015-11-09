@@ -45,6 +45,7 @@ class RecipeEditor(QtGui.QMainWindow):
         self.updating_internal = False
         self.recipes_to_commit = {}
         self.current_recipe = None
+        self.error_cells = []
 
         # store backend from Main
         self.be = backend if backend is not None else Backend()
@@ -119,6 +120,7 @@ class RecipeEditor(QtGui.QMainWindow):
 
         self.ui.recipe_table.resizeColumnToContents(0)
         self.updating_internal = False
+        self.error_cells = []
 
     def update_backend(self):
         self.be.update_recipes(self.get_staged_recipes_data())
@@ -190,11 +192,18 @@ class RecipeEditor(QtGui.QMainWindow):
             self.updating_internal = True
             item.setBackgroundColor(QColor(0xffffff))
             self.updating_internal = False
-            self.stage_recipe()
+            if (row, col) in self.error_cells:
+                self.error_cells.remove((row, col))
+
+            # stage recipe if no errors
+            if len(self.error_cells) == 0:
+                self.stage_recipe()
         except ValueError:
             self.updating_internal = True
             item.setBackgroundColor(QColor(255, 102, 102))
             self.updating_internal = False
+            if (row, col) not in self.error_cells:
+                self.error_cells.append((row, col))
             self.unstage_recipe()
 
     @pyqtSlot(bool)

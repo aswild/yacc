@@ -83,17 +83,23 @@ class YaccMain(QtGui.QMainWindow):
         self.is_init = False # make sure update_mix doesn't fail when the config is cleared out
         self.be = Backend(self.config_file)
         selected_recipe = self.ui.recipe_box.currentText()
+        self.populate_recipe_box(selected_recipe)
 
+        self.is_init = is_init_last
+        self.update_mix()
+
+    def populate_recipe_box(self, selected_recipe=None):
+        is_init_last = self.is_init
+        self.is_init = False
         self.ui.recipe_box.clear()
         for recipe in self.be.get_recipes():
             self.ui.recipe_box.addItem(recipe)
 
-        selected_index = self.ui.recipe_box.findText(selected_recipe)
-        if selected_index != -1:
-            self.ui.recipe_box.setCurrentIndex(selected_index)
-
+        if selected_recipe is not None:
+            selected_index = self.ui.recipe_box.findText(selected_recipe)
+            if selected_index != -1:
+                self.ui.recipe_box.setCurrentIndex(selected_index)
         self.is_init = is_init_last
-        self.update_mix()
 
     def update_recipe_status(self):
         if not self.is_init:
@@ -153,9 +159,15 @@ class YaccMain(QtGui.QMainWindow):
         if self.recipe_editor is None:
             self.recipe_editor = RecipeEditor(self, self.be)
             self.recipe_editor.signal_exit.connect(self.handle_redit_exit)
-            self.recipe_editor.signal_backend_updated.connect(self.update_mix)
-            self.recipe_editor.signal_backend_updated.connect(self.update_recipe_status)
+            self.recipe_editor.signal_backend_updated.connect(self.handle_redit_backend_update)
             self.recipe_editor.show()
+
+    @pyqtSlot()
+    def handle_redit_backend_update(self):
+        selected_recipe = self.ui.recipe_box.currentText()
+        self.populate_recipe_box(selected_recipe)
+        self.update_recipe_status()
+        self.update_mix()
 
     @pyqtSlot(str)
     def handle_redit_exit(self, text):

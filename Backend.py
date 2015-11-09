@@ -172,7 +172,6 @@ class Backend(object):
         self._recipes[recipe_name] = recipe_data
 
     def update_recipes(self, recipes):
-        print('Backend.update_recipes')
         for r in recipes:
             self._recipes[r] = recipes[r]
 
