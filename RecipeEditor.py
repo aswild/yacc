@@ -1,10 +1,38 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt4.QtGui import QTableWidgetItem, QColor, QMessageBox, QInputDialog
+from PyQt4.QtGui import QTableWidgetItem, QListWidgetItem, QColor, QMessageBox, QInputDialog
 from ui_yacc_main_window import Ui_yacc_main_window
 from ui_recipe_builder_window import Ui_MainWindow
 from Backend import Backend
 import pdb
+
+# role constants for YQListWidgetItem
+RECIPE_ITEM_NAME   = 33
+RECIPE_ITEM_STAGED = 34
+RECIPE_ITEM_DATA   = 35
+
+class RecipeItem(QListWidgetItem):
+    """ Child class of QListWidgetItem, so that I can store the recipe name and staged status
+    directly in RecipeEditor.recipe_list_items
+    I'm also just gonna use these instance variables directly without dealing with roles and the data()
+    because why wrap basic calls in get/set methods? This isn't CS class, I can do what I want!
+    """
+    def __init__(self, recipe_name='', staged=False, recipe_data=None):
+        QListWidgetItem.__init__(self, recipe_name)
+        self.recipe_name = recipe_name
+        self.staged = staged
+        self.recipe_data = recipe_data
+        self.setText(recipe_name)
+
+    def stage(self, stage=True, recipe_data=None):
+        if stage:
+            self.staged = True
+            self.recipe_data = recipe_data
+            self.setText(self.recipe_name + ' (*)')
+        else:
+            self.staged = False
+            self.recipe_data = None
+            self.setText(self.recipe_name)
 
 class RecipeEditor(QtGui.QMainWindow):
     signal_exit = pyqtSignal(str)
@@ -27,7 +55,7 @@ class RecipeEditor(QtGui.QMainWindow):
         self.ui.recipe_table.setHorizontalHeaderLabels(['Flavor', 'Strength (%)'])
 
         # signals/slots
-        self.ui.recipe_list.currentRowChanged.connect(self.handle_rlist_row_change)
+        self.ui.recipe_list.currentItemChanged.connect(self.handle_rlist_item_change)
         self.ui.recipe_table.cellChanged.connect(self.handle_rtable_cell_change)
         self.ui.revertrecipe_button.clicked.connect(self.handle_revert_click)
         self.ui.save_button.clicked.connect(self.handle_save_click)
@@ -39,9 +67,33 @@ class RecipeEditor(QtGui.QMainWindow):
         self.ui.delflavor_button.clicked.connect(self.handle_delflavor_click)
 
         # initialize recipe list
-        for r in self.be.get_recipes():
-            self.ui.recipe_list.addItem(r)
+        self.recipe_list_items = {}
+        for recipe_name in self.be.get_recipes():
+            self.add_recipe_to_list(recipe_name)
         self.ui.recipe_list.setCurrentRow(0)
+
+    def add_recipe_to_list(self, recipe_name, stage=False, recipe_data=None):
+        item = RecipeItem(recipe_name, stage, recipe_data)
+        self.recipe_list_items[recipe_name] = item
+        self.ui.recipe_list.addItem(item)
+
+    def get_recipe_data(self, recipe_name):
+        try:
+            if self.recipe_list_items[recipe_name].staged:
+                return self.recipe_list_items[recipe_name].recipe_data
+            else:
+                return self.be.get_recipe(recipe_name)
+        except KeyError:
+            print('RecipeEditor.get_recipe_data: KeyError caught!')
+            return {}
+
+    def get_staged_recipes_data(self):
+        ret = {}
+        for (name, item) in self.recipe_list_items.items():
+            if item.staged:
+                ret[name] = item.recipe_data
+
+        return ret
 
     def load_recipe(self, recipe_name=None, create_new=False):
         if self.updating_internal or (recipe_name is None and not create_new):
@@ -52,11 +104,11 @@ class RecipeEditor(QtGui.QMainWindow):
 
         if create_new:
             recipe = {'New Flavor 1':0}
-            self.stage_recipe(recipe_name, recipe)
-        elif recipe_name in self.recipes_to_commit:
-            recipe = self.recipes_to_commit[recipe_name]
+            #self.stage_recipe(recipe_name, recipe)
+            self.add_recipe_to_list(recipe_name, True, recipe)
+            self.ui.recipe_list.setCurrentItem(self.recipe_list_items[recipe_name])
         else:
-            recipe = self.be.get_recipe(recipe_name)
+            recipe = self.get_recipe_data(recipe_name)
         
         self.ui.recipe_table.clearContents()
         self.ui.recipe_table.setRowCount(len(recipe))
@@ -69,11 +121,11 @@ class RecipeEditor(QtGui.QMainWindow):
         self.updating_internal = False
 
     def update_backend(self):
-        self.be.update_recipes(self.recipes_to_commit)
+        self.be.update_recipes(self.get_staged_recipes_data())
         
         # unstage all staged recipes
-        for r in list(self.recipes_to_commit.keys()):
-            self.unstage_recipe(r)
+        for (r, item) in self.recipe_list_items.items():
+            item.stage(False)
 
         self.signal_backend_updated.emit()
 
@@ -88,72 +140,41 @@ class RecipeEditor(QtGui.QMainWindow):
         return recipe
 
     def stage_recipe(self, recipe_name=None, recipe_data=None):
-        #print('RecipeEditor.stage_recipe called')
         if recipe_name is None:
             recipe_name = self.current_recipe
         if recipe_data is None:
-            self.recipes_to_commit[recipe_name] = self.compile_current_recipe()
-        else:
-            self.recipes_to_commit[recipe_name] = recipe_data
+            recipe_data = self.compile_current_recipe()
 
-        regex = recipe_name + r"( \(\*\))?"
-        rowmatches = self.ui.recipe_list.findItems(regex, Qt.MatchRegExp)
-        #print('RecipeEditor.stage_recipe found %s'%str(rowmatches))
-        if len(rowmatches) < 1:
-            return
-        rowmatches[0].setText(recipe_name + ' (*)')
+        item = self.recipe_list_items[recipe_name]
+        item.stage(True, recipe_data)
 
     def unstage_recipe(self, recipe_name=None):
-        #print('unstage_recipe called')
         if recipe_name is None:
             recipe_name = self.current_recipe
-        try:
-            self.recipes_to_commit.pop(recipe_name)
-        except KeyError:
-            pass
 
-        item = self.get_recipe_item(recipe_name)
-        name = self.recipe_name_staged(item.text())[0]
-        item.setText(name)
-
-    def recipe_name_staged(self, name=None):
-        if name is None:
-            # if None, get current selection
-            name = self.ui.recipe_list.currentItem().text()
-
-        if name.endswith(' (*)'):
-            name = name[:-4]
-            return name, True
-        else:
-            return name, False
+        item = self.recipe_list_items[recipe_name]
+        item.stage(False)
 
     def get_recipe_row(self, recipe_name):
-        regex = recipe_name + r"( \(\*\))?"
-        rowmatches = self.ui.recipe_list.findItems(regex, Qt.MatchRegExp)
-        if len(rowmatches) > 0:
-            return self.ui.recipe_list.row(rowmatches[0])
-        else:
+        try:
+            return self.ui.recipe_list.row(self.recipe_list_items[recipe_name])
+        except KeyError:
             return None
 
-    def get_recipe_item(self, recipe_name):
-        row = self.get_recipe_row(recipe_name)
-        if row is not None:
-            return self.ui.recipe_list.item(row)
-        else:
-            return None
-
-    @pyqtSlot(int)
-    def handle_rlist_row_change(self, row):
-        recipe_name = self.recipe_name_staged(self.ui.recipe_list.item(row).text())[0]
-        self.load_recipe(recipe_name)
+    @pyqtSlot(QListWidgetItem, QListWidgetItem)
+    def handle_rlist_item_change(self, current, previous):
+        if current is not None:
+            recipe_name = current.recipe_name
+            self.load_recipe(recipe_name)
 
     @pyqtSlot(int, int)
     def handle_rtable_cell_change(self, row, col):
         if self.updating_internal:
-            # bail if we're loading a recipe from backend
+            # bail if we're loading a recipe
             return
 
         if col == 0:
+            # TODO actually stage flavor name changes
             self.ui.recipe_table.resizeColumnToContents(0)
             return
 
@@ -178,8 +199,8 @@ class RecipeEditor(QtGui.QMainWindow):
 
     @pyqtSlot(bool)
     def handle_revert_click(self):
-        self.load_recipe(self.current_recipe)
         self.unstage_recipe()
+        self.load_recipe(self.current_recipe)
 
     @pyqtSlot(bool)
     def handle_save_click(self):
@@ -194,14 +215,6 @@ class RecipeEditor(QtGui.QMainWindow):
     def handle_addrecipe_click(self):
         (recipe_name, ok) = QInputDialog.getText(self, 'New Recipe', 'Enter Recipe Name:')
         if ok:
-            self.current_recipe = recipe_name
-            self.ui.recipe_list.addItem(recipe_name)
-            
-            #mutex this change
-            self.updating_internal = True
-            self.ui.recipe_list.setCurrentRow(self.get_recipe_row(recipe_name))
-            self.updating_internal = False
-
             self.load_recipe(recipe_name, create_new=True)
 
     @pyqtSlot(bool)

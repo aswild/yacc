@@ -47,6 +47,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="renamerecipe_button">
+          <property name="text">
+           <string>Rename Recipe</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -78,6 +85,13 @@
     </item>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Recipe Contents:</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QTableWidget" name="recipe_table">
         <property name="editTriggers">
