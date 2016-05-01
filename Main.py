@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 
 import sys
+import platform
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import pyqtSignal, pyqtSlot
+from PyQt4.QtGui import QFont, QFontInfo
 from yacc_main_window import Ui_yacc_main_window
 from RecipeEditor import RecipeEditor
 from Backend import Backend
@@ -16,6 +18,10 @@ class YaccMain(QtGui.QMainWindow):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_yacc_main_window()
         self.ui.setupUi(self)
+
+        # extra UI setup: cross-platform monospace font
+        mfont = self.get_monospace_font()
+        self.ui.output_box.setFont(mfont)
 
         # set up backend and load recipes
         self.config_file = CONFIG_FILE
@@ -56,6 +62,27 @@ class YaccMain(QtGui.QMainWindow):
         self.update_config_status()
         self.update_recipe_status()
 
+    def get_monospace_font(self):
+        preferred_fonts_windows = ['Courier New', 'Lucida Console']
+        preferred_fonts_linux = ['Noto Mono', 'Monospace']
+
+        if 'Windows' in platform.system():
+            pfonts = preferred_fonts_windows
+        else:
+            pfonts = preferred_fonts_linux
+
+        for fontname in pfonts:
+            font = QFont(fontname)
+            info = QFontInfo(font)
+            if info.fixedPitch():
+                return font
+
+        print('Warning: no font in preferred list %s found!'%pfonts)
+        font = QFont()
+        font.setStyleHint(QFont.Monospace)
+        info = QFontInfo(font)
+        print('Selected font family: %s'%info.family())
+
     def update_mix(self):
         if not self.is_init:
             return
@@ -64,7 +91,7 @@ class YaccMain(QtGui.QMainWindow):
         if mix_inputs is None:
             return
 
-        mix = self.be.calculate_mix(*mix_inputs)
+        mix = self.be.calculate_mix(**mix_inputs)
         if mix is None:
             # calculate_mix returns None if the recipe can't be found, so just bail
             # This shouldn't really happen since recipe_box is only populated by items that
@@ -125,35 +152,27 @@ class YaccMain(QtGui.QMainWindow):
         recipe = str(self.ui.recipe_box.currentText())
         mix = str(self.ui.mix_box.itemData(self.ui.mix_box.currentIndex()))
 
+
+        # NOTE: names here must match the inputs of Backend.calculate_mix
+        inputs_out = {'recipe_name': recipe,
+                      'mix': mix}
+
+        inputs_check = [('totalvol', self.ui.totalvol_box),
+                        ('nic', self.ui.nic_box),
+                        ('vg', self.ui.vg_box)]
+
         err = False
-        try:
-            totalvol = float(self.ui.totalvol_box.text())
-            if totalvol <= 0:
-                raise ValueError
-            self.ui.totalvol_box.setStyleSheet('')
-        except ValueError:
-            self.ui.totalvol_box.setStyleSheet('background-color: rgb(255, 102, 102);')
-            err = True
+        for (field, box) in inputs_check:
+            try:
+                inputs_out[field] = float(box.text())
+                if inputs_out[field] < 0:
+                    raise ValueError
+                box.setStyleSheet('')
+            except ValueError:
+                box.setStyleSheet('background-color: rgb(255, 102, 102);')
+                err = True
 
-        try:
-            nic = float(self.ui.nic_box.text())
-            if nic < 0:
-                raise ValueError
-            self.ui.nic_box.setStyleSheet('')
-        except ValueError:
-            self.ui.nic_box.setStyleSheet('background-color: rgb(255, 102, 102);')
-            err = True
-
-        try:
-            vg = float(self.ui.vg_box.text())
-            if vg < 0:
-                raise ValueError
-            self.ui.vg_box.setStyleSheet('')
-        except ValueError:
-            self.ui.vg_box.setStyleSheet('background-color: rgb(255, 102, 102);')
-            err = True
-
-        return None if err else (recipe, totalvol, nic, vg, mix)
+        return None if err else inputs_out
 
     def launch_redit(self):
         if self.recipe_editor is None:
