@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>821</width>
-    <height>300</height>
+    <width>841</width>
+    <height>352</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -42,28 +42,11 @@
           <item row="1" column="0">
            <widget class="QLabel" name="label">
             <property name="text">
-             <string>Recipe</string>
+             <string>Mix Type</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QComboBox" name="recipe_box">
-            <property name="minimumSize">
-             <size>
-              <width>200</width>
-              <height>0</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>Mix</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
            <widget class="QComboBox" name="mix_box">
             <property name="minimumSize">
              <size>
@@ -145,6 +128,23 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Recipe</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="recipe_box">
+            <property name="minimumSize">
+             <size>
+              <width>200</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
@@ -203,12 +203,6 @@
           <height>0</height>
          </size>
         </property>
-        <property name="font">
-         <font>
-          <family>Courier New</family>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
         <property name="readOnly">
          <bool>true</bool>
         </property>
@@ -223,13 +217,13 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>821</width>
-     <height>21</height>
+     <width>841</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>Fi&amp;le</string>
     </property>
     <addaction name="actionOpen_File"/>
     <addaction name="actionAdd_Recipes"/>
@@ -240,17 +234,17 @@
   <widget class="QStatusBar" name="status_bar"/>
   <action name="actionOpen_File">
    <property name="text">
-    <string>Open File</string>
+    <string>&amp;Open File</string>
    </property>
   </action>
   <action name="actionExit">
    <property name="text">
-    <string>Exit</string>
+    <string>&amp;Exit</string>
    </property>
   </action>
   <action name="actionAdd_Recipes">
    <property name="text">
-    <string>Add Recipes</string>
+    <string>&amp;Add Recipes</string>
    </property>
   </action>
  </widget>
