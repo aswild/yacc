@@ -3,7 +3,7 @@
 import sys
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import pyqtSignal, pyqtSlot
-from ui_yacc_main_window import Ui_yacc_main_window
+from yacc_main_window import Ui_yacc_main_window
 from RecipeEditor import RecipeEditor
 from Backend import Backend
 import pdb

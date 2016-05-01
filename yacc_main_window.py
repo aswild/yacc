@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'yacc_main_window.ui'
+# Form implementation generated from reading ui file '/workspace/yacc/yacc_main_window.ui'
 #
 # Created by: PyQt4 UI code generator 4.11.4
 #

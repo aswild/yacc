@@ -1,8 +1,8 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import pyqtSignal, pyqtSlot, Qt
 from PyQt4.QtGui import QTableWidgetItem, QListWidgetItem, QColor, QMessageBox, QInputDialog
-from ui_yacc_main_window import Ui_yacc_main_window
-from ui_recipe_builder_window import Ui_MainWindow
+from yacc_main_window import Ui_yacc_main_window
+from recipe_builder_window import Ui_MainWindow
 from Backend import Backend
 import pdb
 
