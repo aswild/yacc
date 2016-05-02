@@ -85,43 +85,85 @@ class Backend(object):
             print("Error: recipe %s not found!"%recipe_name)
             return None
 
-        ret = {}
-        if vg > 1:
-            vg = vg / 100.0
-
-        message = None
-        
         # assumes all flavors are PG, will fix this later
         totalflav = sum([1.0*totalvol*recipe[f] for f in recipe.keys()])
-        nic = 1.0*nic*totalvol / self._nic_strength
+        totalflav_part = totalflav / float(totalvol)
+        message = None
 
-        # make sure we're within Max VG/Min VG range
-        max_vg = 1.0 - self.get_total_flavor(recipe_name) - (nic if self._nic_base=='pg' else 0)
-        if vg > max_vg:
-            vg = max_vg
-            message = 'Using Max VG: %.1f%%'%(max_vg*100.0)
-        else:
-            min_vg = nic / totalvol if self._nic_base=='vg' else 0.0
-            if vg < min_vg:
-                vg = min_vg
-                message = 'Using Max PG: %.1f%%'%(100.0*(1.0-min_vg))
+        if mix != 'concentrate':
+            if vg > 1:
+                vg = vg / 100.0
 
-        totalvg = totalvol * vg
-        totalpg = totalvol - totalvg
+            message = None
+            nic = 1.0*nic*totalvol / self._nic_strength
 
-        if self._nic_base == 'vg':
-            addpg = totalpg - totalflav
-            addvg = totalvg - nic
-        else:
-            addpg = totalpg - totalflav - nic
-            addvg = totalvg
+            # make sure we're within Max VG/Min VG range
+            max_vg = 1.0 - self.get_total_flavor(recipe_name) - (nic if self._nic_base=='pg' else 0)
+            if vg > max_vg:
+                vg = max_vg
+                message = 'Using Max VG: %.1f%%'%(max_vg*100.0)
+            else:
+                min_vg = nic / totalvol if self._nic_base=='vg' else 0.0
+                if vg < min_vg:
+                    vg = min_vg
+                    message = 'Using Max PG: %.1f%%'%(100.0*(1.0-min_vg))
 
-        # force nonnegative numbers in case rounding makes -.0000000001 or whatever
-        if addpg < 0:
-            addpg = 0
-        if addvg < 0:
-            addvg = 0
+            totalvg = totalvol * vg
+            totalpg = totalvol - totalvg
 
+            if self._nic_base == 'vg':
+                addpg = totalpg - totalflav
+                addvg = totalvg - nic
+            else:
+                addpg = totalpg - totalflav - nic
+                addvg = totalvg
+
+            # force nonnegative numbers in case rounding makes -.0000000001 or whatever
+            if addpg < 0:
+                addpg = 0
+            if addvg < 0:
+                addvg = 0
+
+
+        # generate string to return for the output box
+        max_flavor_name_len = max(len(f) for f in (list(recipe.keys()) + ['Nicotine']))
+        ret = ''
+
+        if mix != 'from_concentrate':
+            for f in sorted(recipe.keys()):
+                if mix == 'from_ingredients':
+                    f_vol = 1.0*totalvol*recipe[f]
+                else: # 'concentrate'
+                    f_vol = (totalvol * recipe[f]) / totalflav_part
+
+                spaces = max_flavor_name_len - len(f)
+                ret += '\n%s: %3.2f mL'%(' '*spaces + f, f_vol)
+            # the first character will always be a newline from the loop above, which we don't want, so kill it
+            ret = ret[1:]
+
+        elif mix == 'from_concentrate':
+            # "Concentrate" is longer than Nicotine, so it gets the max
+            max_flavor_name_len = len('Concentrate')
+            ret = 'Concentrate: %3.2f mL'%totalflav
+
+
+        if mix != 'concentrate':
+            # add nic/VG/PG
+            ret += '\n\n' + ' '*(max_flavor_name_len-8) + 'Nicotine: %3.2f mL'%nic
+            ret += '\n'   + ' '*(max_flavor_name_len-2) + 'VG: %3.2f mL'%addvg
+            ret += '\n'   + ' '*(max_flavor_name_len-2) + 'PG: %3.2f mL'%addpg
+
+        if message is not None:
+            ret += '\n\n' + message
+
+        return ret
+
+    def calculate_concentrate_mix(self, recipe_name, totalvol=10):
+        try:
+            recipe = self._recipes[recipe_name]
+        except KeyError:
+            print("Error: recipe %s not found!"%recipe_name)
+            return None
 
         # generate string to return for the output box
         max_flavor_name_len = max(len(f) for f in (list(recipe.keys()) + ['Nicotine']))
@@ -133,16 +175,7 @@ class Backend(object):
 
         # the first character will always be a newline from the loop above, which we don't want, so kill it
         ret = ret[1:]
-        
-        # add nic/VG/PG
-        ret += '\n\n' + ' '*(max_flavor_name_len-8) + 'Nicotine: %3.2f mL'%nic
-        ret += '\n'   + ' '*(max_flavor_name_len-2) + 'VG: %3.2f mL'%addvg
-        ret += '\n'   + ' '*(max_flavor_name_len-2) + 'PG: %3.2f mL'%addpg
 
-        if message is not None:
-            ret += '\n\n' + message
-
-        return ret
 
     def get_total_flavor(self, recipe_name):
         try:

@@ -44,12 +44,16 @@ class YaccMain(QtGui.QMainWindow):
         # recipe editor
         self.recipe_editor = None
 
+        # saved values of nic/vg for switching in and out of concentrate mode
+        self.save_nic = None
+        self.save_vg = None
+
         # signals/slots
         self.ui.actionExit.triggered.connect(self.exit)
         self.ui.update_button.clicked.connect(self.update_mix)
         self.ui.recipe_box.currentIndexChanged.connect(self.update_mix)
         self.ui.recipe_box.currentIndexChanged.connect(self.update_recipe_status)
-        self.ui.mix_box.currentIndexChanged.connect(self.update_mix)
+        self.ui.mix_box.currentIndexChanged.connect(self.handle_mixtype_change)
         self.ui.totalvol_box.textChanged.connect(self.update_mix)
         self.ui.nic_box.textChanged.connect(self.update_mix)
         self.ui.vg_box.textChanged.connect(self.update_mix)
@@ -58,6 +62,7 @@ class YaccMain(QtGui.QMainWindow):
         self.ui.actionAdd_Recipes.triggered.connect(self.launch_redit)
 
         self.is_init = True
+        self.update_mix_type()
         self.update_mix()
         self.update_config_status()
         self.update_recipe_status()
@@ -73,6 +78,7 @@ class YaccMain(QtGui.QMainWindow):
 
         for fontname in pfonts:
             font = QFont(fontname)
+            font.setPointSize(12)
             info = QFontInfo(font)
             if info.fixedPitch():
                 return font
@@ -100,6 +106,32 @@ class YaccMain(QtGui.QMainWindow):
 
         self.ui.output_box.setPlainText(mix)
 
+    def update_mix_type(self):
+        if not self.is_init:
+            return
+
+        mix_type = self.ui.mix_box.itemData(self.ui.mix_box.currentIndex())
+        if mix_type == 'concentrate':
+            # making concentrate, so disable nic and VG
+            self.save_nic = self.ui.nic_box.text()
+            self.save_vg  = self.ui.vg_box.text()
+            self.ui.nic_box.setText('')
+            self.ui.nic_box.setEnabled(False)
+            self.ui.vg_box.setText('')
+            self.ui.vg_box.setEnabled(False)
+
+        else:
+            # default, unlock nic and vg boxes
+            self.ui.nic_box.setEnabled(True)
+            if self.save_nic is not None:
+                self.ui.nic_box.setText(self.save_nic)
+                self.save_nic = None
+
+            self.ui.vg_box.setEnabled(True)
+            if self.save_vg is not None:
+                self.ui.vg_box.setText(self.save_vg)
+                self.save_vg = None
+        
     def update_config_status(self):
         cfg = self.be.get_config()
         self.status_config_message_label.setText('Nicotine: %d mg/mL %s; Recipes Loaded: %d'%(
@@ -157,9 +189,11 @@ class YaccMain(QtGui.QMainWindow):
         inputs_out = {'recipe_name': recipe,
                       'mix': mix}
 
-        inputs_check = [('totalvol', self.ui.totalvol_box),
-                        ('nic', self.ui.nic_box),
-                        ('vg', self.ui.vg_box)]
+        inputs_check = [('totalvol', self.ui.totalvol_box)]
+
+        if mix != 'concentrate':
+            inputs_check += [('nic', self.ui.nic_box),
+                             ('vg', self.ui.vg_box)]
 
         err = False
         for (field, box) in inputs_check:
@@ -180,6 +214,12 @@ class YaccMain(QtGui.QMainWindow):
             self.recipe_editor.signal_exit.connect(self.handle_redit_exit)
             self.recipe_editor.signal_backend_updated.connect(self.handle_redit_backend_update)
             self.recipe_editor.show()
+
+    def handle_mixtype_change(self):
+        # wrapper here for change event on mix type box
+        # Do this rather than assigning 2 slots so it executes in definite order
+        self.update_mix_type()
+        self.update_mix()
 
     @pyqtSlot()
     def handle_redit_backend_update(self):
