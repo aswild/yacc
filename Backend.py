@@ -124,7 +124,6 @@ class Backend(object):
             if addvg < 0:
                 addvg = 0
 
-
         # generate string to return for the output box
         max_flavor_name_len = max(len(f) for f in (list(recipe.keys()) + ['Nicotine']))
         ret = ''
@@ -137,44 +136,28 @@ class Backend(object):
                     f_vol = (totalvol * recipe[f]) / totalflav_part
 
                 spaces = max_flavor_name_len - len(f)
-                ret += '\n%s: %3.2f mL'%(' '*spaces + f, f_vol)
+                ret += '\n%s: %5.2f mL'%(' '*spaces + f, f_vol)
             # the first character will always be a newline from the loop above, which we don't want, so kill it
             ret = ret[1:]
 
         elif mix == 'from_concentrate':
             # "Concentrate" is longer than Nicotine, so it gets the max
             max_flavor_name_len = len('Concentrate')
-            ret = 'Concentrate: %3.2f mL'%totalflav
-
+            ret = 'Concentrate: %5.2f mL'%totalflav
 
         if mix != 'concentrate':
             # add nic/VG/PG
-            ret += '\n\n' + ' '*(max_flavor_name_len-8) + 'Nicotine: %3.2f mL'%nic
-            ret += '\n'   + ' '*(max_flavor_name_len-2) + 'VG: %3.2f mL'%addvg
-            ret += '\n'   + ' '*(max_flavor_name_len-2) + 'PG: %3.2f mL'%addpg
+            ret += '\n\n' + ' '*(max_flavor_name_len-8) + 'Nicotine: %5.2f mL'%nic
+            ret += '\n'   + ' '*(max_flavor_name_len-2) + 'VG: %5.2f mL'%addvg
+            ret += '\n'   + ' '*(max_flavor_name_len-2) + 'PG: %5.2f mL'%addpg
+        else:
+            ctotal = totalvol / totalflav_part
+            message = ' '*(max_flavor_name_len-5) + 'Makes: %5.2f mL'%ctotal
 
         if message is not None:
             ret += '\n\n' + message
 
         return ret
-
-    def calculate_concentrate_mix(self, recipe_name, totalvol=10):
-        try:
-            recipe = self._recipes[recipe_name]
-        except KeyError:
-            print("Error: recipe %s not found!"%recipe_name)
-            return None
-
-        # generate string to return for the output box
-        max_flavor_name_len = max(len(f) for f in (list(recipe.keys()) + ['Nicotine']))
-        ret = ''
-        for f in sorted(recipe.keys()):
-            f_vol = 1.0*totalvol*recipe[f]
-            spaces = max_flavor_name_len - len(f)
-            ret += '\n%s: %3.2f mL'%(' '*spaces + f, f_vol)
-
-        # the first character will always be a newline from the loop above, which we don't want, so kill it
-        ret = ret[1:]
 
 
     def get_total_flavor(self, recipe_name):
