@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import sys
+import sys, os
 import platform
 from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import pyqtSignal, pyqtSlot
@@ -10,7 +10,8 @@ from RecipeEditor import RecipeEditor
 from Backend import Backend
 import pdb
 
-CONFIG_FILE = 'vaperecipes.json'
+CONFIG_FILE_NAME = 'vaperecipes.json'
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), CONFIG_FILE_NAME)
 
 class YaccMain(QtGui.QMainWindow):
     def __init__(self, parent=None):
